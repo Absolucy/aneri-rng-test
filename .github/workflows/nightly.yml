@@ -1,0 +1,43 @@
+name: Build Nightlies
+on:
+    - push
+    - workflow_dispatch
+jobs:
+    build:
+        name: Build Releases
+        runs-on: ${{ matrix.os.runner }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os:
+                    - name: linux
+                      runner: ubuntu-latest
+                      target: i686-unknown-linux-gnu
+                    - name: win
+                      runner: windows-latest
+                      target: i686-pc-windows-msvc
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup Rust toolchain
+              uses: actions-rust-lang/setup-rust-toolchain@v1
+              with:
+                  target: ${{ matrix.os.target }}
+            - name: Install dependencies (Linux)
+              if: ${{ matrix.os.name == 'linux' }}
+              run: |
+                  sudo dpkg --add-architecture i386
+                  sudo apt-get update
+                  sudo apt-get install libgcc-s1:i386 g++-multilib zlib1g-dev:i386 libssl-dev:i386
+            - name: Build
+              run: cargo build --release --package aneri-rng-test --target "${{ matrix.os.target }}" --no-default-features
+              env:
+                  PKG_CONFIG_ALLOW_CROSS: 1
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: aneri-rng-test-${{ matrix.os.name }}
+                  if-no-files-found: error
+                  path: |
+                      target/${{ matrix.os.target }}/release/aneri_rng_test.dll
+                      target/${{ matrix.os.target }}/release/aneri_rng_test.pdb
+                      target/${{ matrix.os.target }}/release/libaneri_rng_test.so
