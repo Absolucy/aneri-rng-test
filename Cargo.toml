@@ -12,7 +12,7 @@ rust-version = "1.77"
 crate-type = ["cdylib"]
 
 [dependencies]
-byondapi = { git = "https://github.com/spacestation13/byondapi-rs" }
+byondapi = { git = "https://github.com/Absolucy/byondapi-rs", branch = "error-proc" }
 eyre = "0.6"
 once_cell = "1"
 parking_lot = "0.12"
