@@ -43,24 +43,18 @@ where
 	}
 	let mut iter = options.into_iter();
 	let mut options = Vec::with_capacity(options_len / 2);
+	let mut weights = Vec::with_capacity(options_len / 2);
 	while let (Some(key), Some(value)) = (iter.next(), iter.next()) {
-		options.push([key, value]);
+		let weight = match value.get_number() {
+			Ok(weight) if weight.is_normal() && weight.is_sign_positive() => weight,
+			_ => continue,
+		};
+		options.push(key);
+		weights.push(weight);
 	}
-	let weights = options
-		.iter()
-		.map(|[_, weight]| weight.get_number())
-		.filter_map(|weight| weight.ok())
-		.filter(|weight| weight.is_normal() && weight.is_sign_positive())
-		.collect::<Vec<f32>>();
 	match weights.len() {
 		0 => return Ok(ByondValue::null()),
-		1 => {
-			return Ok(options
-				.first()
-				.and_then(|entry| entry.first())
-				.cloned()
-				.unwrap_or_default())
-		}
+		1 => return Ok(options.into_iter().next().unwrap_or_default()),
 		_ => {}
 	}
 	let dist = match WeightedIndex::new(weights) {
@@ -68,9 +62,5 @@ where
 		Err(_) => return Ok(ByondValue::null()),
 	};
 	let idx = dist.sample(rng);
-	Ok(options
-		.get(idx)
-		.and_then(|entry| entry.first())
-		.cloned()
-		.unwrap_or_default())
+	Ok(options.into_iter().nth(idx).unwrap_or_default())
 }
